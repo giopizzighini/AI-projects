@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PIT — Tactical Operations</title>
+  <meta name="description" content="A browser tactical shooter. Campaign and single matches, five combat zones, and politician bosses with their acolytes." />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    if (location.protocol === "file:") document.documentElement.classList.add("file");
+  </script>
+</head>
+<body data-state="menu">
+  <canvas id="view" tabindex="0" aria-label="Arena viewport"></canvas>
+
+  <div id="hud">
+    <div class="radar-panel"><div class="radar-heading"><span id="location-name">DUST COMPOUND</span><span>↑ N</span></div><canvas id="radar" width="180" height="180" aria-label="Tactical radar: blue is you, gold is the visible boss, red marks visible acolytes"></canvas><p id="movement-status">STANDING</p></div>
+    <div class="round-clock"><span>ELIMINATION</span><strong id="round-timer">2:45</strong><small id="round-number">ROUND 01 / 05</small><small id="enemy-count">4 / 4 HOSTILES</small></div>
+    <div class="ammo-panel"><div id="reload-status" hidden>RELOADING</div><p id="ammo-weapon">USP-S</p><strong id="ammo-count">12</strong><span> / <b id="reserve-count">96</b></span><small>R &nbsp; RELOAD</small></div>
+    <div id="kill-feed" hidden></div>
+    <header class="hud-top">
+      <div class="stat">
+        <div class="row"><span class="name">+ HEALTH</span><span id="you-hp">100</span></div>
+        <div class="track"><span id="you-bar"></span></div>
+      </div>
+      <div class="hud-center">
+        <div class="wordmark" id="map-label">1 / 5</div>
+        <div id="hud-score-panel">
+          <div class="score-display">SCORE <span id="score-val">0</span></div>
+          <div class="weapon-display">
+            <span id="weapon-lvl-tag">LVL 1</span>
+            <span id="weapon-name">SERVICE PISTOL</span>
+          </div>
+          <div id="weapon-prog-track" title="Score progress to next weapon upgrade"><span id="weapon-prog-bar"></span></div>
+        </div>
+      </div>
+      <div class="stat foe">
+        <div class="row"><span id="foe-hp">100</span><span class="name" id="foe-name">Gilmar Mendes</span></div>
+        <div class="track"><span id="foe-bar"></span></div>
+      </div>
+    </header>
+    <div id="crosshair" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <div id="hitmark" aria-hidden="true"></div>
+    <div id="cool" aria-hidden="true"><span id="cool-bar"></span></div>
+    <div id="combo-tag" hidden>x2 COMBO</div>
+    <div id="score-popups"></div>
+    <div id="banner" hidden>FIGHT</div>
+    <p id="aim-lock" hidden>PAUSED · CLICK TO RESUME</p>
+    <button id="pause-menu" class="text-button" type="button" hidden>CHANGE MODE / MATCH</button>
+    <p class="hint" id="hint">WASD walks &nbsp;·&nbsp; Mouse aims &nbsp;·&nbsp; Click shoots</p>
+  </div>
+
+  <div id="vignette" aria-hidden="true"></div>
+
+  <section id="menu" class="sheet" aria-labelledby="title">
+    <nav class="menu-nav"><a class="brand" href="./">PIT<span> / </span>OPS</a><span class="nav-status"><i></i> LOCAL TRAINING</span></nav>
+    <div class="menu-copy">
+      <p class="kicker">TACTICAL OPERATIONS / VOL. 01</p>
+      <h1 id="title">EVERY SHOT<br><em>COUNTS.</em></h1>
+      <p class="lede">The villains are back, with reinforcements.<br>Hunt the boss. Outflank the acolytes.</p>
+      <fieldset class="mode-picker">
+        <legend class="field-label">GAME TYPE</legend>
+        <label class="mode-choice"><input id="mode-campaign" type="radio" name="game-mode" value="campaign" checked><span><strong>CAMPAIGN</strong><small>All five bosses, in order</small></span></label>
+        <label class="mode-choice"><input id="mode-single" type="radio" name="game-mode" value="single"><span><strong>SINGLE MATCH</strong><small>Your map. Your opponent.</small></span></label>
+      </fieldset>
+      <p id="mode-description">Five stages in order. Begin with Mendes and finish with Lula. Weapon upgrades carry between stages.</p>
+      <ol id="campaign-route" aria-label="Fixed campaign order"><li>Gilmar Mendes</li><li>Dias Toffoli</li><li>Jair Bolsonaro</li><li>Alexandre de Moraes</li><li>Lula</li></ol>
+      <div id="single-options" hidden>
+        <label class="field-label" for="map-select">MAP</label>
+        <select id="map-select"><option value="0">DUST COMPOUND</option><option value="1">BLUE QUARTER</option><option value="2">OLD MARKET</option><option value="3">CHECKPOINT</option><option value="4">LAST STAND</option></select>
+        <label class="field-label" for="boss-select">BOSS</label>
+        <select id="boss-select"><option value="0">GILMAR MENDES</option><option value="1">DIAS TOFFOLI</option><option value="2">JAIR BOLSONARO</option><option value="3">ALEXANDRE DE MORAES</option><option value="4">LULA</option></select>
+      </div>
+      <button id="start" type="button"><span id="start-label">START CAMPAIGN</span><span aria-hidden="true">→</span></button>
+      <p class="deploy-note">NO DOWNLOAD. NO ACCOUNT. JUST YOUR AIM.</p>
+      <button id="roster-open" class="text-button" type="button">VIEW THE CHARACTERS ↗</button>
+    </div>
+    <aside class="scene-caption"><span class="live-tag">LIVE ENVIRONMENT</span><h2>DUST<br>COMPOUND</h2><p>35° 12′ N &nbsp; 06° 41′ E <span> // </span> <span id="deployment-enemies">GILMAR MENDES + 3 ACOLYTES</span></p></aside>
+    <footer class="menu-footer"><span><kbd>W A S D</kbd> MOVE</span><span><kbd>SHIFT</kbd> WALK</span><span><kbd>C</kbd> CROUCH</span><span><kbd>R</kbd> RELOAD</span><span><kbd>ESC</kbd> PAUSE</span><label>SENSITIVITY <input id="sensitivity" aria-label="Mouse sensitivity" type="range" min="0.5" max="2" step="0.1" value="1"></label><button id="sound-toggle" class="text-button" type="button" aria-pressed="true">SOUND ON</button></footer>
+    <p id="error" class="warn" hidden></p>
+    <p id="file-warn" class="warn">Open this page from a local server. In the arena folder, run <code>python -m http.server</code> and visit the address it prints.</p>
+  </section>
+
+  <section id="end" class="end" hidden>
+    <div class="panel">
+      <p class="kicker">AFTER ACTION REPORT</p>
+      <h2 id="end-title">You are down</h2>
+      <p id="end-detail"></p>
+      <div id="end-score-box">
+        <div class="end-stat-row"><span>FINAL SCORE:</span><strong id="end-score">0</strong></div>
+        <div class="end-stat-row"><span>HIGH SCORE:</span><strong id="end-high-score">0</strong></div>
+        <div class="end-stat-row"><span>WEAPON TIER:</span><strong id="end-weapon-tier">LVL 1</strong></div>
+        <div class="end-stat-row"><span>MAX COMBO:</span><strong id="end-max-combo">x0</strong></div>
+      </div>
+      <button id="again" type="button">Run it back</button>
+      <button id="change-match" class="secondary-button" type="button">Choose game mode</button>
+    </div>
+  </section>
+
+  <dialog id="roster" aria-labelledby="roster-title">
+    <div class="roster-heading"><div><p class="kicker">KNOW YOUR OPPONENTS</p><h2 id="roster-title">THE ROSTER</h2></div><button id="roster-close" class="secondary-button" type="button" autofocus>BACK TO SETUP ×</button></div>
+    <div class="roster-grid">
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Gilmar Mendes, in judicial robes" style="background-image: url('./assets/characters/gilmar-walk.png')"></div><p>SUPREME COURT JUDGE</p><h3>Gilmar Mendes</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Dias Toffoli, in judicial robes" style="background-image: url('./assets/characters/toffoli-walk.png')"></div><p>SUPREME COURT JUDGE</p><h3>Dias Toffoli</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Alexandre de Moraes, in judicial robes" style="background-image: url('./assets/characters/moraes-walk.png')"></div><p>SUPREME COURT JUDGE</p><h3>Alexandre de Moraes</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Jair Bolsonaro, in presidential suit and sash" style="background-image: url('./assets/characters/bolsonaro-walk.png')"></div><p>PRESIDENT</p><h3>Jair Bolsonaro</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Lula, in presidential suit and sash" style="background-image: url('./assets/characters/lula-walk.png')"></div><p>PRESIDENT</p><h3>Lula</h3></article>
+    </div>
+    <h3 class="acolyte-heading">THE ACOLYTES</h3>
+    <div class="roster-grid acolyte-grid">
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Arthur Lira, in formal civilian clothing" style="background-image: url('./assets/characters/arthur-lira-walk.png')"></div><h3>Arthur Lira</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Rodrigo Maia, in formal civilian clothing" style="background-image: url('./assets/characters/rodrigo-maia-walk.png')"></div><h3>Rodrigo Maia</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Kim Kataguiri, in formal civilian clothing" style="background-image: url('./assets/characters/kim-kataguiri-walk.png')"></div><h3>Kim Kataguiri</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Tabata Amaral, in formal civilian clothing" style="background-image: url('./assets/characters/tabata-amaral-walk.png')"></div><h3>Tabata Amaral</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Aguinaldo Ribeiro, in formal civilian clothing" style="background-image: url('./assets/characters/aguinaldo-ribeiro-walk.png')"></div><h3>Aguinaldo Ribeiro</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="André Ferreira, in formal civilian clothing" style="background-image: url('./assets/characters/andre-ferreira-walk.png')"></div><h3>André Ferreira</h3></article>
+      <article class="roster-card"><div class="roster-art" role="img" aria-label="Abilio Brunini, in formal civilian clothing" style="background-image: url('./assets/characters/abilio-brunini-walk.png')"></div><h3>Abilio Brunini</h3></article>
+    </div>
+  </dialog>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
